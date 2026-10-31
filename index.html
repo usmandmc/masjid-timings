@@ -1,0 +1,594 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Masjid Timings</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Public+Sans:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style id="app-style">
+/* Layout: a single column. A list of mosques with the next prayer on each row, then one page per mosque with the five times as a ruled board. */
+:root {
+  --bg: #f2f4f8;
+  --surface: #ffffff;
+  --fg: #172039;
+  --muted: #55617c;
+  --line: #d3d9e5;
+  --accent: #0d7566;
+  --accent-fg: #ffffff;
+  --tint: #dcefec;
+  --change: #b45f06;
+  --change-tint: #fbebd3;
+  --danger: #b3261e;
+
+  --display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Public Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1426; --surface: #151e36; --fg: #e7ebf5; --muted: #9aa6c2;
+    --line: #27324f; --accent: #43c6af; --accent-fg: #0d1426; --tint: #173a3f;
+    --change: #ffb347; --change-tint: #3a2c14; --danger: #ff8a80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1426; --surface: #151e36; --fg: #e7ebf5; --muted: #9aa6c2;
+  --line: #27324f; --accent: #43c6af; --accent-fg: #0d1426; --tint: #173a3f;
+  --change: #ffb347; --change-tint: #3a2c14; --danger: #ff8a80;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.55;
+  padding-block: 0 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 720px; margin-inline: auto; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; margin: 0; text-wrap: balance; }
+.label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 20px; border-bottom: 1px solid var(--line); }
+.brand { font-family: var(--display); font-weight: 700; font-size: 22px; text-decoration: none; }
+.brand small { display: block; font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+button, .btn {
+  font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block;
+  border-radius: 4px; padding: 9px 16px; border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+}
+button:hover, .btn:hover { border-color: var(--accent); }
+.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.primary:hover { filter: brightness(1.08); }
+.danger { color: var(--danger); }
+button[disabled] { opacity: 0.6; cursor: default; }
+
+main { padding-block: 24px; display: grid; gap: 20px; }
+#status { min-height: 1.4em; font-size: 14px; color: var(--accent); font-weight: 600; }
+
+.filters { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.filters > * { min-width: 0; }
+input, select, textarea {
+  font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 4px; padding: 10px 12px; width: 100%;
+}
+.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+.row > * { min-width: 0; }
+.row a.main-link { text-decoration: none; display: grid; gap: 2px; }
+.row h2 { font-size: 19px; }
+.row .next { font-family: var(--mono); font-size: 14px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; background: var(--tint); color: var(--fg); }
+.tag.change { background: var(--change-tint); color: var(--change); font-weight: 500; }
+.star { padding: 8px 12px; font-size: 14px; }
+.star[aria-pressed="true"] { background: var(--tint); border-color: var(--accent); }
+
+.panel { background: var(--change-tint); border: 1px solid var(--change); border-radius: 6px; padding: 14px 16px; display: grid; gap: 10px; }
+.panel h2 { font-size: 17px; color: var(--change); }
+.panel ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.panel .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 6px; padding: 28px 20px; text-align: center; display: grid; gap: 12px; justify-items: center; }
+.empty p { margin: 0; max-width: 40ch; }
+
+.back { font-size: 15px; }
+.hero { display: grid; gap: 6px; }
+.hero h1 { font-size: clamp(1.9rem, 6vw, 2.6rem); }
+.nextbox { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; display: grid; gap: 4px; }
+.nextbox .big { font-family: var(--display); font-weight: 700; font-size: clamp(1.8rem, 7vw, 2.6rem); line-height: 1.1; }
+.nextbox .big span { font-family: var(--mono); font-weight: 500; font-size: 0.7em; margin-left: 6px; }
+.board { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.board table { width: 100%; border-collapse: collapse; }
+.board th, .board td { padding: 13px 20px; text-align: left; border-bottom: 1px solid var(--line); font-weight: 400; }
+.board tr:last-child th, .board tr:last-child td { border-bottom: 0; }
+.board th { font-family: var(--display); font-weight: 500; font-size: 18px; }
+.board td { text-align: right; font-family: var(--mono); font-size: 18px; font-variant-numeric: tabular-nums; }
+.board tr.is-next { background: var(--tint); }
+.board tr.is-next th, .board tr.is-next td { font-weight: 700; }
+.board tr.jummah th, .board tr.jummah td { color: var(--muted); font-size: 15px; }
+.actions-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.history { display: grid; gap: 8px; }
+.history ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.history li { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
+.history li time { font-family: var(--mono); font-size: 12px; color: var(--muted); padding-top: 2px; }
+
+form { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: grid; gap: 16px; }
+form h1 { font-size: 24px; }
+.field { display: grid; gap: 6px; }
+.field label { font-weight: 600; font-size: 14px; }
+.field .fixed { font-family: var(--mono); padding: 10px 12px; border: 1px dashed var(--line); border-radius: 4px; color: var(--muted); }
+.times { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+.times > * { min-width: 0; }
+.err { color: var(--danger); font-weight: 600; min-height: 1.3em; margin: 0; font-size: 14px; }
+
+footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 14px; display: grid; gap: 4px; }
+footer p { margin: 0; max-width: 60ch; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap" id="shell">
+  <header>
+    <a class="brand" href="#"><small>Prayer times by mosque</small>Masjid Timings</a>
+    <div id="top-actions"></div>
+  </header>
+  <main>
+    <div id="status" role="status" aria-live="polite"></div>
+    <div id="view"><p class="muted">Loading timings…</p></div>
+  </main>
+  <footer>
+    <p>Each mosque's committee keeps its own times. If a time matters, confirm it with the mosque.</p>
+    <p>Follow a mosque and any change to its times appears at the top of the page the next time you open it on this device.</p>
+  </footer>
+</div>
+
+<script type="application/json" id="state">{"mosques":[{"id":"tnlkkztcwrpnldxx887u","name":"Noori Masjid","area":"WAPDA Engineering Academy, Faisalabad","address":"","times":{"fajr":"05:40","dhuhr":"13:30","asr":"16:10","isha":"19:15","jummah":"13:30"},"updatedAt":"2026-10-31T14:41:14.531Z","log":[]}]}</script>
+
+<script id="app-script">
+(function () {
+  /* Everything this page needs to save itself, captured before anything is drawn. */
+  var SHELL = document.getElementById("shell").outerHTML;
+  var CSS = document.getElementById("app-style").textContent;
+  var JS = document.getElementById("app-script").textContent;
+  var HEAD = '<title>Masjid Timings</title><meta name="claude:viewport-fit-sides" content="cover"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Public+Sans:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">';
+  var RESET = ':root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}';
+
+  var state = { mosques: [] };
+  try { state = JSON.parse(document.getElementById("state").textContent) || state; } catch (e) {}
+  if (!Array.isArray(state.mosques)) state.mosques = [];
+
+  var PRAYERS = [["fajr","Fajr"],["dhuhr","Dhuhr"],["asr","Asr"],["maghrib","Maghrib"],["isha","Isha"]];
+  var FIXED = { maghrib: "After Sunset" };
+  var ALL = PRAYERS.concat([["jummah","Jummah (Friday)"]]);
+  var LABEL = {}; ALL.forEach(function (p) { LABEL[p[0]] = p[1]; });
+
+  var view = document.getElementById("view");
+  var statusEl = document.getElementById("status");
+  var topActions = document.getElementById("top-actions");
+
+  var artifactNs = null;
+  var canWrite = false;
+  var filterQ = "", filterArea = "";
+  var statusTimer = null;
+
+  function load(key, fallback) {
+    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+  }
+  var follows = load("mt.follows", []);
+  var seen = load("mt.seen", {});
+
+  function el(tag, props) {
+    var e = document.createElement(tag);
+    props = props || {};
+    Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v === false || v == null) return;
+      if (k === "class") e.className = v;
+      else if (k === "text") e.textContent = v;
+      else if (k.indexOf("on") === 0) e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, "");
+      else e.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var kids = [].concat(arguments[i]);
+      for (var j = 0; j < kids.length; j++) {
+        var c = kids[j];
+        if (c == null || c === false) continue;
+        e.append(c.nodeType ? c : document.createTextNode(c));
+      }
+    }
+    return e;
+  }
+
+  function flash(msg) {
+    statusEl.textContent = msg;
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(function () { statusEl.textContent = ""; }, 6000);
+  }
+
+  function getMosque(id) {
+    for (var i = 0; i < state.mosques.length; i++) if (state.mosques[i].id === id) return state.mosques[i];
+    return null;
+  }
+
+  /* time helpers */
+  function mins(t) { var p = t.split(":"); return Number(p[0]) * 60 + Number(p[1]); }
+  function fmt(t) {
+    if (!t) return "Not set";
+    var p = t.split(":"), h = Number(p[0]), m = p[1];
+    return (h % 12 || 12) + ":" + m + " " + (h >= 12 ? "PM" : "AM");
+  }
+  function show(m, k) { return FIXED[k] || fmt(m.times && m.times[k]); }
+  function fmtDate(iso) {
+    try { return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); }
+    catch (e) { return iso || ""; }
+  }
+  function nextOf(m) {
+    var cur = new Date().getHours() * 60 + new Date().getMinutes();
+    var seq = PRAYERS.filter(function (p) { return FIXED[p[0]] || (m.times && m.times[p[0]]); });
+    for (var i = 0; i < seq.length; i++) {
+      var k = seq[i][0];
+      if (FIXED[k]) {
+        var prev = seq[i - 1], after = seq[i + 1];
+        var prevT = prev ? mins(m.times[prev[0]]) : -1;
+        var afterT = after ? mins(m.times[after[0]]) : 1440;
+        if (cur >= prevT && cur < afterT) return { key: k, label: seq[i][1], fixed: true };
+        continue;
+      }
+      var t = mins(m.times[k]);
+      if (t > cur) return { key: k, label: seq[i][1], diff: t - cur };
+    }
+    var first = seq.filter(function (p) { return !FIXED[p[0]]; })[0];
+    if (!first) return null;
+    return { key: first[0], label: first[1], diff: mins(m.times[first[0]]) + 1440 - cur, tomorrow: true };
+  }
+  function inText(d) {
+    var h = Math.floor(d / 60), m = d % 60;
+    return h === 0 ? m + " min" : h + " h " + m + " min";
+  }
+  function nextLine(m) {
+    var n = nextOf(m);
+    if (!n) return "No times set";
+    if (n.fixed) return n.label + " " + FIXED[n.key];
+    return n.label + " " + fmt(m.times[n.key]) + " · in " + inText(n.diff);
+  }
+  function shownLog(m) {
+    return (m.log || []).filter(function (e) { return e.prayer !== "maghrib"; });
+  }
+  function latestChanges(m) {
+    return shownLog(m).filter(function (e) { return e.at === m.updatedAt; });
+  }
+  function changeText(e) {
+    return LABEL[e.prayer] + " " + fmt(e.from) + " → " + fmt(e.to);
+  }
+  function isFollowed(id) { return follows.indexOf(id) !== -1; }
+  function hasUnseen(m) { return isFollowed(m.id) && seen[m.id] && seen[m.id] !== m.updatedAt && latestChanges(m).length > 0; }
+
+  function route() {
+    var h = location.hash.slice(1);
+    if (h.indexOf("m-") === 0) return { v: "detail", id: h.slice(2) };
+    if (h.indexOf("edit-") === 0) return { v: "edit", id: h.slice(5) };
+    if (h === "new-mosque") return { v: "new" };
+    return { v: "list" };
+  }
+
+  function renderTop() {
+    topActions.textContent = "";
+    if (canWrite && route().v === "list") {
+      topActions.append(el("a", { class: "btn primary", href: "#new-mosque", text: "Add a mosque" }));
+    }
+  }
+
+  function render() {
+    var r = route();
+    var focusId = document.activeElement && document.activeElement.id;
+    var selStart = null;
+    if (focusId === "q") selStart = document.activeElement.selectionStart;
+    view.textContent = "";
+    renderTop();
+    if (r.v === "detail") renderDetail(r.id);
+    else if (r.v === "edit") renderForm(r.id);
+    else if (r.v === "new") renderForm(null);
+    else renderList();
+    if (focusId === "q") {
+      var q = document.getElementById("q");
+      if (q) { q.focus(); try { q.setSelectionRange(selStart, selStart); } catch (e) {} }
+    }
+  }
+
+  function followButton(m) {
+    var on = isFollowed(m.id);
+    return el("button", {
+      class: "star", type: "button", "aria-pressed": on ? "true" : "false",
+      "aria-label": (on ? "Stop following " : "Follow ") + m.name,
+      text: on ? "Following" : "Follow",
+      onclick: function () {
+        if (on) { follows = follows.filter(function (x) { return x !== m.id; }); }
+        else { follows.push(m.id); seen[m.id] = m.updatedAt || ""; save("mt.seen", seen); }
+        save("mt.follows", follows);
+        render();
+      }
+    });
+  }
+
+  function renderList() {
+    var all = state.mosques.slice();
+    var changed = all.filter(hasUnseen);
+
+    if (changed.length) {
+      var ul = el("ul", null);
+      changed.forEach(function (m) {
+        ul.append(el("li", null,
+          el("a", { href: "#m-" + m.id, text: m.name }), ": ",
+          latestChanges(m).map(changeText).join(", ")));
+      });
+      view.append(el("section", { class: "panel", "aria-label": "Timing changes" },
+        el("h2", { text: changed.length === 1 ? "A mosque you follow changed its times" : changed.length + " mosques you follow changed their times" }),
+        ul,
+        el("div", { class: "actions" }, el("button", {
+          type: "button", text: "Mark as read",
+          onclick: function () { changed.forEach(function (m) { seen[m.id] = m.updatedAt; }); save("mt.seen", seen); render(); }
+        }))));
+    }
+
+    if (!all.length) {
+      view.append(el("div", { class: "empty" },
+        el("h2", { text: "No mosques yet" }),
+        canWrite
+          ? [el("p", { class: "muted", text: "Add the first mosque, then enter its prayer times." }),
+             el("a", { class: "btn primary", href: "#new-mosque", text: "Add a mosque" })]
+          : el("p", { class: "muted", text: "No mosque has been added yet. Check back soon." })));
+      return;
+    }
+
+    if (all.length > 1) {
+      var areas = Array.from(new Set(all.map(function (m) { return (m.area || "").trim(); }).filter(Boolean))).sort();
+      var sel = el("select", { id: "area", "aria-label": "Filter by area", onchange: function (e) { filterArea = e.target.value; render(); } },
+        el("option", { value: "", text: "All areas" }),
+        areas.map(function (a) { return el("option", { value: a, text: a, selected: a === filterArea }); }));
+      view.append(el("div", { class: "filters" },
+        el("input", {
+          id: "q", type: "search", placeholder: "Search by mosque or area", value: filterQ, "aria-label": "Search mosques",
+          oninput: function (e) { filterQ = e.target.value; render(); }
+        }), sel));
+    }
+
+    var q = filterQ.trim().toLowerCase();
+    var shown = all.filter(function (m) {
+      if (filterArea && (m.area || "").trim() !== filterArea) return false;
+      if (!q) return true;
+      return ((m.name || "") + " " + (m.area || "") + " " + (m.address || "")).toLowerCase().indexOf(q) !== -1;
+    }).sort(function (a, b) {
+      var fa = isFollowed(a.id) ? 0 : 1, fb = isFollowed(b.id) ? 0 : 1;
+      return fa - fb || (a.name || "").localeCompare(b.name || "");
+    });
+
+    if (!shown.length) {
+      view.append(el("p", { class: "muted", text: "No mosque matches that search." }));
+      return;
+    }
+    var list = el("ul", { class: "rows" });
+    shown.forEach(function (m) {
+      list.append(el("li", { class: "row" },
+        el("a", { class: "main-link", href: "#m-" + m.id },
+          el("h2", { text: m.name }),
+          el("span", { class: "muted", text: m.area || m.address || "" }),
+          el("span", { class: "next js-next", "data-id": m.id, text: nextLine(m) }),
+          hasUnseen(m) ? el("span", { class: "tags" }, el("span", { class: "tag change", text: "Times changed" })) : null),
+        followButton(m)));
+    });
+    view.append(list);
+  }
+
+  function renderDetail(id) {
+    var m = getMosque(id);
+    if (!m) {
+      view.append(el("a", { class: "back", href: "#", text: "← All mosques" }),
+        el("div", { class: "empty" }, el("h2", { text: "Mosque not found" }), el("p", { class: "muted", text: "It may have been removed." })));
+      return;
+    }
+    if (isFollowed(id) && seen[id] !== m.updatedAt) { seen[id] = m.updatedAt || ""; save("mt.seen", seen); }
+
+    var n = nextOf(m);
+    view.append(
+      el("a", { class: "back", href: "#", text: "← All mosques" }),
+      el("div", { class: "hero" },
+        el("h1", { text: m.name }),
+        el("div", { class: "muted", text: [m.area, m.address].filter(Boolean).join(" · ") })),
+      n ? el("div", { class: "nextbox" },
+        el("span", { class: "label", text: n.tomorrow ? "Next prayer, tomorrow" : "Next prayer" }),
+        el("div", { class: "big" }, n.label, el("span", { text: n.fixed ? FIXED[n.key] : fmt(m.times[n.key]) })),
+        el("div", { class: "muted js-next-in", "data-id": id, text: n.fixed ? "Prayed once the sun has set" : "in " + inText(n.diff) })) : null);
+
+    var tbody = el("tbody");
+    ALL.forEach(function (p) {
+      var t = FIXED[p[0]] || (m.times && m.times[p[0]]);
+      if (!t) return;
+      tbody.append(el("tr", { class: (n && n.key === p[0] ? "is-next" : "") + (p[0] === "jummah" ? " jummah" : "") },
+        el("th", { scope: "row", text: p[1] }), el("td", { text: show(m, p[0]) })));
+    });
+    view.append(el("div", { class: "board" }, el("table", { "aria-label": "Prayer times" }, tbody)));
+    if (m.updatedAt) view.append(el("div", { class: "label", text: "Last updated " + fmtDate(m.updatedAt) }));
+
+    var actions = el("div", { class: "actions-row" }, followButton(m));
+    if (canWrite) actions.append(el("a", { class: "btn", href: "#edit-" + id, text: "Update times" }));
+    view.append(actions);
+
+    var log = shownLog(m);
+    if (log.length) {
+      var ul = el("ul");
+      log.slice(0, 8).forEach(function (e) {
+        ul.append(el("li", null, el("time", { text: fmtDate(e.at) }), el("span", { text: changeText(e) })));
+      });
+      view.append(el("section", { class: "history" }, el("h2", { class: "label", text: "Recent changes" }), ul));
+    }
+  }
+
+  function renderForm(id) {
+    var isNew = !id;
+    if (!canWrite) {
+      view.append(el("a", { class: "back", href: "#", text: "← All mosques" }),
+        el("div", { class: "empty" }, el("h2", { text: "Only the page editors can change times" }),
+          el("p", { class: "muted", text: "If you manage a mosque, ask the page owner to give you Editor access." })));
+      return;
+    }
+    var cur = isNew ? { times: {}, log: [] } : getMosque(id);
+    if (!cur) {
+      view.append(el("a", { class: "back", href: "#", text: "← All mosques" }),
+        el("div", { class: "empty" }, el("h2", { text: "Mosque not found" })));
+      return;
+    }
+    var err = el("p", { class: "err", role: "alert" });
+    var saveBtn = el("button", { class: "primary", type: "submit", text: isNew ? "Add mosque" : "Save times" });
+
+    var timeFields = [];
+    ALL.forEach(function (p) {
+      if (FIXED[p[0]]) {
+        timeFields.push(el("div", { class: "field" },
+          el("label", { text: p[1] }), el("div", { class: "fixed", text: FIXED[p[0]] })));
+        return;
+      }
+      timeFields.push(el("div", { class: "field" },
+        el("label", { for: "t-" + p[0], text: p[1] + (p[0] === "jummah" ? " (optional)" : "") }),
+        el("input", { id: "t-" + p[0], type: "time", value: (cur.times && cur.times[p[0]]) || "" })));
+    });
+
+    var form = el("form", { novalidate: true },
+      el("h1", { text: isNew ? "Add a mosque" : "Update times" }),
+      el("div", { class: "field" }, el("label", { for: "f-name", text: "Mosque name" }),
+        el("input", { id: "f-name", type: "text", value: cur.name || "", autocomplete: "off" })),
+      el("div", { class: "field" }, el("label", { for: "f-area", text: "Area or neighbourhood" }),
+        el("input", { id: "f-area", type: "text", value: cur.area || "", autocomplete: "off" })),
+      el("div", { class: "field" }, el("label", { for: "f-address", text: "Street address (optional)" }),
+        el("input", { id: "f-address", type: "text", value: cur.address || "", autocomplete: "off" })),
+      el("div", { class: "times" }, timeFields),
+      err,
+      el("div", { class: "actions-row" }, saveBtn,
+        el("a", { class: "btn", href: isNew ? "#" : "#m-" + id, text: "Cancel" })));
+
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      err.textContent = "";
+      var name = document.getElementById("f-name").value.trim();
+      if (!name) { err.textContent = "Enter the mosque name."; return; }
+      var times = {};
+      for (var i = 0; i < ALL.length; i++) {
+        var k = ALL[i][0];
+        if (FIXED[k]) continue;
+        var v = document.getElementById("t-" + k).value;
+        if (!v && k !== "jummah") { err.textContent = "Enter the " + ALL[i][1] + " time."; return; }
+        if (v) times[k] = v;
+      }
+      var area = document.getElementById("f-area").value.trim();
+      var address = document.getElementById("f-address").value.trim();
+      var at = new Date().toISOString();
+      var next = JSON.parse(JSON.stringify(state));
+
+      if (isNew) {
+        var newId = "m" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        next.mosques.push({ id: newId, name: name, area: area, address: address, times: times, updatedAt: at, log: [] });
+        saveBtn.disabled = true;
+        commit(next, "#m-" + newId);
+        return;
+      }
+      var diffs = [];
+      ALL.forEach(function (p) {
+        if (FIXED[p[0]]) return;
+        var before = (cur.times && cur.times[p[0]]) || "";
+        var after = times[p[0]] || "";
+        if (before !== after) diffs.push({ at: at, prayer: p[0], from: before, to: after });
+      });
+      var target = next.mosques.filter(function (x) { return x.id === id; })[0];
+      target.name = name; target.area = area; target.address = address; target.times = times;
+      if (diffs.length) {
+        target.updatedAt = at;
+        target.log = diffs.concat(shownLog(cur)).slice(0, 12);
+      }
+      saveBtn.disabled = true;
+      commit(next, "#m-" + id);
+    });
+
+    view.append(el("a", { class: "back", href: isNew ? "#" : "#m-" + id, text: "← Back" }), form);
+
+    if (!isNew) {
+      var armed = false;
+      var del = el("button", { class: "danger", type: "button", text: "Delete this mosque" });
+      del.addEventListener("click", function () {
+        if (!armed) {
+          armed = true; del.textContent = "Select again to delete for good";
+          setTimeout(function () { armed = false; del.textContent = "Delete this mosque"; }, 4000);
+          return;
+        }
+        var next = JSON.parse(JSON.stringify(state));
+        next.mosques = next.mosques.filter(function (x) { return x.id !== id; });
+        commit(next, "#");
+      });
+      view.append(el("div", { class: "actions-row" }, del));
+    }
+  }
+
+  /* Build the full page, with the current data inside it, and save it as the new version. */
+  function buildDoc(data) {
+    var json = JSON.stringify(data).replace(/</g, "\\u003c");
+    return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>' + RESET + '</style></head><body>' +
+      HEAD + '<style id="app-style">' + CSS + '</style>' + SHELL +
+      '<script type="application/json" id="state">' + json + '<\/script>' +
+      '<script id="app-script">' + JS + '<\/script></body></html>';
+  }
+
+  function commit(next, hashAfter) {
+    var prevHash = location.hash;
+    flash("Saving…");
+    if (hashAfter) location.hash = hashAfter;
+    return artifactNs.publish(buildDoc(next)).then(function () {
+      state = next;
+      flash("Saved.");
+    }, function (e) {
+      location.hash = prevHash;
+      var code = e && e.code;
+      if (code === "conflict") flash("Someone saved at the same moment. The page is reloading with their version; make your change again.");
+      else if (code === "not_granted" || code === "not_writer") { canWrite = false; flash("Your account can view this page but not change it."); render(); }
+      else flash("Could not save. Check your connection and try again.");
+      var b = document.querySelector("form button[type=submit]");
+      if (b) b.disabled = false;
+    });
+  }
+
+  function tick() {
+    document.querySelectorAll(".js-next").forEach(function (node) {
+      var m = getMosque(node.getAttribute("data-id"));
+      if (m) node.textContent = nextLine(m);
+    });
+    if (route().v === "detail" && document.querySelector(".js-next-in")) render();
+  }
+  setInterval(tick, 30000);
+
+  window.addEventListener("hashchange", function () { window.scrollTo(0, 0); render(); });
+
+  render();
+
+  /* Anyone can read the page. Editing lights up only for people allowed to save it. */
+  if (window.claude && window.claude.use) {
+    Promise.all([window.claude.use("artifact"), window.claude.use("user")]).then(function (res) {
+      artifactNs = res[0];
+      return res[1] ? res[1].canEdit() : false;
+    }).then(function (ce) {
+      canWrite = !!(artifactNs && ce);
+      if (!document.querySelector("form")) render();
+    }).catch(function () {});
+  }
+})();
+</script>
+
+</body></html>
